@@ -16,7 +16,7 @@ pipeline {
                     rm -rf todo-list-aws-config
                     # Selecciona la rama según el entorno
                     if [ "$ENV" = "production" ]; then
-                        BRANCH=master
+                        BRANCH=production
                     elif [ "$ENV" = "staging" ]; then
                         BRANCH=staging
                     else
@@ -160,10 +160,10 @@ pipeline {
                         echo -e "\n## [Release] - $fecha\n### Promoción a producción\n" >> CHANGELOG.md
                         git add CHANGELOG.md
                         git commit -m "chore: marcar versión $version como Release en CHANGELOG.md"
-                        # Merge a master
-                        git checkout master
+                        # Merge a production
+                        git checkout production
                         git merge staging
-                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/darioreyesr25/todo-list-aws-config.git master
+                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/darioreyesr25/todo-list-aws-config.git production
                     '''
                 }
             }
