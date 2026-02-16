@@ -10,7 +10,7 @@ pipeline {
         // Etapa para obtener el código fuente del repositorio
         stage('Get Code') {
             steps {
-                // Clonar el repositorio en el workspace desde la rama develop
+                // Clonar el repositorio en el workspace desde la rama staging
                 sh '''
                     echo "La rama es: $BRANCH_NAME"
                     rm -rf todo-list-aws-config
@@ -18,9 +18,9 @@ pipeline {
                     if [ "$ENV" = "production" ]; then
                         BRANCH=master
                     elif [ "$ENV" = "staging" ]; then
-                        BRANCH=develop
+                        BRANCH=staging
                     else
-                        BRANCH=develop
+                        BRANCH=staging
                     fi
                     git clone --branch $BRANCH https://github.com/darioreyesr25/todo-list-aws-config.git
                     ls todo-list-aws-config
@@ -154,7 +154,7 @@ pipeline {
                         git commit -m "chore: marcar versión $version como Release en CHANGELOG.md"
                         # Merge a master
                         git checkout master
-                        git merge develop
+                        git merge staging
                         git push https://${GIT_USER}:${GIT_TOKEN}@github.com/darioreyesr25/todo-list-aws-config.git master
                     '''
                 }
