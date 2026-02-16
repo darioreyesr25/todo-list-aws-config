@@ -13,7 +13,7 @@ pipeline {
                 // Clonar el repositorio en el workspace desde la rama develop
                 sh '''
                     echo "La rama es: $BRANCH_NAME"
-                    rm -rf todo-list-aws-master
+                    rm -rf todo-list-aws-config
                     # Selecciona la rama según el entorno
                     if [ "$ENV" = "production" ]; then
                         BRANCH=master
@@ -22,8 +22,8 @@ pipeline {
                     else
                         BRANCH=develop
                     fi
-                    git clone --branch $BRANCH https://github.com/darioreyesr25/todo-list-aws-master.git
-                    ls todo-list-aws-master
+                    git clone --branch $BRANCH https://github.com/darioreyesr25/todo-list-aws-config.git
+                    ls todo-list-aws-config
                 '''
                 echo WORKSPACE
             }
@@ -42,13 +42,13 @@ pipeline {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     // Ejecución de flake8 y redirección de la salida a un archivo
                     sh '''
-                        cd todo-list-aws-master
+                        cd todo-list-aws-config
                         flake8 --exit-zero --format=pylint src > flake8.out
                     '''
                     
                     // Registro de incidencias con Warnings Next Generation Plugin
                     recordIssues(
-                        tools: [flake8(name: 'Flake8', pattern: 'todo-list-aws-master/flake8.out')],
+                        tools: [flake8(name: 'Flake8', pattern: 'todo-list-aws-config/flake8.out')],
                         qualityGates: [
                                 // Si hay más de 8 avisos: UNSTABLE (Amarillo)
                                 [threshold: 8, type: 'TOTAL', unstable: true],
@@ -73,15 +73,15 @@ pipeline {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     // Ejecución de Bandit y redirección de la salida a un archivo
                     sh '''
-                        cd todo-list-aws-master
+                        cd todo-list-aws-config
                         bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}" || true
                         # Garantizar que el archivo bandit.out exista aunque esté vacío
                         test -f bandit.out || touch bandit.out
                     '''
                     // Mostrar el reporte de Bandit en la consola
-                    sh 'cat todo-list-aws-master/bandit.out || true'
+                    sh 'cat todo-list-aws-config/bandit.out || true'
                     // Archivar el reporte de Bandit como artefacto descargable
-                    archiveArtifacts artifacts: 'todo-list-aws-master/bandit.out', onlyIfSuccessful: false
+                    archiveArtifacts artifacts: 'todo-list-aws-config/bandit.out', onlyIfSuccessful: false
                 }
             }
         }
@@ -91,7 +91,7 @@ pipeline {
             steps {
                 // Despliegue de la aplicación en AWS utilizando SAM CLI
                 sh '''
-                    cd todo-list-aws-master
+                    cd todo-list-aws-config
                     sam build
                     sam deploy --config-env $ENV --no-confirm-changeset --no-fail-on-empty-changeset || true
                     # Obtener la URL del API Gateway del output de CloudFormation
@@ -115,7 +115,7 @@ pipeline {
                 // Recuperar el archivo base_url.txt guardado en la etapa Deploy
                 unstash 'baseurlfile'
                 sh '''
-                    cd todo-list-aws-master
+                    cd todo-list-aws-config
                     export BASE_URL=$(cat ../base_url.txt)
                     export PYTHONPATH=$WORKSPACE
                     # Generar el reporte para junits
@@ -125,7 +125,7 @@ pipeline {
                         pytest test/integration/todoApiTest.py --junitxml=integration_test_report.xml || true
                     fi
                 '''
-                junit allowEmptyResults: true, testResults: 'todo-list-aws-master/integration_test_report.xml'
+                junit allowEmptyResults: true, testResults: 'todo-list-aws-config/integration_test_report.xml'
             }
         }
 
@@ -145,7 +145,7 @@ pipeline {
                 }
                 withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
                     sh '''
-                        cd todo-list-aws-master
+                        cd todo-list-aws-config
                         # Marcar como Release en el CHANGELOG.md
                         fecha=$(date +"%Y-%m-%d")
                         version="$(git describe --tags --abbrev=0 2>/dev/null || echo 1.0.0)"
@@ -155,7 +155,7 @@ pipeline {
                         # Merge a master
                         git checkout master
                         git merge develop
-                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/darioreyesr25/todo-list-aws-master.git master
+                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/darioreyesr25/todo-list-aws-config.git master
                     '''
                 }
             }
